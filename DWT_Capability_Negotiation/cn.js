@@ -224,9 +224,18 @@ function getCapType(){
 			document.getElementById('availableValuesSPAN').style.display = '';
 			document.getElementById('availableValues').options.length = 0;
 			for(var i=0;i<DWObject.CapNumItems;i++){
-				DWObject.CapValueType>8?
-				/*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i))):
+				DWObject.CapValueType > 8 ?
+				/*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i)))
+				:
 				/*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
+			}
+			if(DWObject.CapValueType > 8){
+				UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')',true);
+				UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')',true);
+			}
+			else{
+				UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')',true);
+				UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')',true);
 			}
 			break;
 		case EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE/*5*/:

@@ -14,25 +14,27 @@
 	<div style="float:left; width:272px; height:352px;">
 		Choose A Scanner: <select size="1" id="source" style="width: 160px; margin-Bottom:10px;"></select><br />
 		<input type="button" value="Show Supported Capabilites" style="width: 270px; margin-top:10px;" onclick="checkScanner();" /><br />
-		Supported Capabilities: <select size="1" id="capabilities" style="width: 135px; margin-top:10px;" onchange="getCapType();"></select><br />
-		Message Type: <select size="1" id="messageType" style="width: 182px; margin-top:10px;"></select><br />
+		Supported Capabilities: <select size="1" id="capabilities" style="width: 135px; margin-top:10px;" onchange="getCapabilityInfo();"></select><br />
+		Message Type: <select size="1" id="messageType" style="width: 182px; margin-top:10px;" onchange="changePageStyle();"></select><br />
 		Container Type: <select size="1" id="containerType" style="width: 177px; margin-top:10px;" disabled="disabled"></select><br />
-		<span id="availableValuesSPAN" style="display:none" >Available Values: <select size="1" id="availableValues" style="width: 170px; margin-top:10px;"></select></span><br />
-		<input type="button" value="Start Negotiation" style="width: 270px; margin:10px 0;" onclick="LoadImage();" /><br />
-		Returned:<br />
-		<input id="Return_text"  type="text" value="" style="width: 268px; margin-top:5px;" /><br />
-		<br />Structure: <input type="button" value="Clear All" onclick="clearInfo();" /><br />
+		<span id="availableValuesSPAN" style="display:none" >Available Values: <select size="1" id="availableValues" style="width: 170px; margin-top:10px;"></select></span><br /><br />
+		<span id='textAboveInput'>Returned:</span><br />
+		<select size="1" id="TrueOrFalse" style="width: 268px; margin-top:5px; display:none;">
+			<option value="1">TRUE</option>
+			<option value="0">False</option>
+		</select>
+		<input id="txtReturnedOrToSet"  type="text" value="" style="width: 268px; margin-top:5px;" /><br />
+		<input type="button" id="btnSetCapability" value="Start Negotiation" style="width: 270px; margin:10px 0; display:none;" onclick="setCapability();" /><br />
+		<input type="button" id="btnScanEx" value="Start Scanning" style="width: 270px; margin:10px 0;" onclick="btnScanEx();" /><br />
+		<span id='textAboveArea'>Structure: </span><input type="button" value="Clear All" onclick="clearInfo();" /><br />
 		<div id="status_text" style="height:134px; overflow-y:scroll; border: solid 1px silver"></div>
 	<div>
 	
 
     <script type="text/javascript">
         var DWObject;
-		var CurrentPath;
-		var ClassifiedIndice = [];
-		var imageArrays = [];
 		var textStatus = "";
-		var supportedCapabilities, msgType, ctnType, txtReturned;
+		var supportedCapabilities, msgType, ctnType, txtReturnedOrToSet;
         Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); 
 		
         function Dynamsoft_OnReady() {
@@ -61,7 +63,8 @@
 				ctnType.options.add(new Option("TWON_ENUMERATION", EnumDWT_TWAINCONTAINERTYPE.TWON_ENUMERATION));
 				ctnType.options.add(new Option("TWON_ONEVALUE", EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE));
 				ctnType.options.add(new Option("TWON_RANGE", EnumDWT_TWAINCONTAINERTYPE.TWON_RANGE));
-				txtReturned = document.getElementById('Return_text');
+				txtReturnedOrToSet = document.getElementById('txtReturnedOrToSet');
+				TrueOrFalse = document.getElementById('TrueOrFalse');
 				/*
 				* List all available TWAIN deivces (scanners("etc.)
 				*/				
@@ -71,16 +74,7 @@
                 for (var i = 0; i < vCount; i++) {
                     twainsource.options.add(new Option(DWObject.GetSourceNameItems(i), i));
                 }
-				/*
-				* Use the event OnPostAllTransfers to make sure that images are uploaded automatically after they are scanned
-				*/
-                DWObject.RegisterEvent('OnPostAllTransfers', SaveFile);
-				DWObject.SetViewMode(3,3);
-				/*
-				* Make sure the barcode add-on is already installed("please note that the file Barcode.zip is already part of the sample
-				*/
-				var CurrentPathName = unescape(location.pathname);
-				CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
+				DWObject.SetViewMode(2,2);
 			}
         }
 		
@@ -94,30 +88,6 @@
                 DWObject.AcquireImage();
             }
         }
-
-        function OnSuccess() {
-            console.log('successful');
-        }
-
-        function OnFailure(errorCode, errorString) {
-            alert(errorString);
-        }
-
-        function LoadImage() {
-            if (DWObject) {
-				/*
-				* Load images in all supported formats (.bmp(".jpg(".tif(".png(".pdf).
-				*/
-                DWObject.IfShowFileDialog = true;
-                DWObject.LoadImageEx("", EnumDWT_ImageType.IT_ALL, OnSuccess, OnFailure); 
-				
-            }
-        }
-        
-        function SaveFile() {
-            DWObject.IfShowProgressBar = false;
-            ReadBarcode(0);
-		}
 		
 		function clearInfo(){
 			document.getElementById('status_text').innerHTML = "";

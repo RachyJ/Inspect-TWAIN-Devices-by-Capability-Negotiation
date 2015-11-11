@@ -1,4 +1,7 @@
-var currentCapType = 0;
+DynamsoftCapabilityNegotiation = {
+	CurrentCapabilityHasBoolValue: false,
+	tempFrame: ''
+};
 EnumDWT_TWAINMSGTYPE = {
     /* Generic messages may be used with any of several DATs.                   */
     MSG_GET: 0x0001, /* Get one or more values                   */
@@ -20,7 +23,7 @@ STR_CapValueType = [
 	'TWTY_INT8','TWTY_INT16', 'TWTY_INT32', 'TWTY_UINT8', 'TWTY_UINT16', 'TWTY_int', 'TWTY_BOOL', 
 	'TWTY_FIX32', 'TWTY_FRAME', 'TWTY_STR32', 'TWTY_STR64', 'TWTY_STR128', 'TWTY_STR255'];
 STR_DuplexValue = ['TWDX_NONE(0)', 'TWDX_1PASSDUPLEX(1)', 'TWDX_2PASSDUPLEX(2)'];
-
+STR_UnitType = ['INCHES(0)', 'CENTIMETERS(1)', 'PICAS(2)', 'POINTS(3)', 'TWIPS(4)', 'PIXELS(5)', 'MILLIMETERS(6)'];
 function checkScanner() {
     DWObject.SelectSourceByIndex(document.getElementById('source').selectedIndex);
     DWObject.CloseSource();
@@ -201,15 +204,17 @@ function showCapabilites() {
         }
     }
 }
-function getCapType(){
+function getCapabilityInfo(){
+	msgType.selectedIndex = 0;
 	clearInfo();
-	txtReturned.value = DWObject.ErrorString;
 	DWObject.OpenSource();
 	DWObject.Capability = supportedCapabilities.value;
 	DWObject.CapGet();
+	txtReturnedOrToSet.value = DWObject.ErrorString;
 	var tmpType = DWObject.CapType;
 	ctnType.selectedIndex = tmpType - 3;
 	document.getElementById('availableValuesSPAN').style.display = 'none';
+	DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = false;
 	switch(tmpType){
 		case EnumDWT_TWAINCONTAINERTYPE.TWON_ARRAY/*3*/:
 			document.getElementById('availableValuesSPAN').style.display = '';
@@ -223,198 +228,201 @@ function getCapType(){
 		case EnumDWT_TWAINCONTAINERTYPE.TWON_ENUMERATION/*4*/:
 			document.getElementById('availableValuesSPAN').style.display = '';
 			document.getElementById('availableValues').options.length = 0;
-			for(var i=0;i<DWObject.CapNumItems;i++){
-				DWObject.CapValueType > 8 ?
-				/*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i)))
-				:
-				/*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
-			}
-			if(DWObject.CapValueType > 8){
-				UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')',true);
-				UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')',true);
+			if(supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES){
+				UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
+				for(var i=0;i<DWObject.CapNumItems;i++){
+					DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " " 
+					+ DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
+					document.getElementById('availableValues').options.add(new Option(DynamsoftCapabilityNegotiation.tempFrame, DynamsoftCapabilityNegotiation.tempFrame));
+                }			
 			}
 			else{
-				UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')',true);
-				UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')',true);
+				for(var i=0;i<DWObject.CapNumItems;i++){
+					DWObject.CapValueType > 8 ?
+					/*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i)))
+					:
+					/*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
+				}
+				if(DWObject.CapValueType > 8){
+					UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')',true);
+					UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')',true);
+				}
+				else{
+					UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')',true);
+					UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')',true);
+				}
 			}
 			break;
 		case EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE/*5*/:
 			var tempValue = '';
-			tempValue = DWObject.CapValue;
-			/*
-			* Special for BOOL
-			*/
-			if(DWObject.CapValueType == EnumDWT_CapValueType.TWTY_BOOL) tempValue ==0?tempValue='FALSE':tempValue='TRUE';
-			/*
-			* Special for DUPLEX
-			*/
-			if(supportedCapabilities.value == EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
-			UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType],true);
-			UpdateInfo('Value = ' + tempValue,true);
+			if(supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES){
+				UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
+				DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " " 
+				+ DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
+				UpdateInfo('There is only one available Frame: ' + DynamsoftCapabilityNegotiation.tempFrame);
+			}
+			else{
+				DWObject.CapValueType > 8?
+				/*STR*/tempValue = DWObject.CapValueString
+				:
+				/*NUM*/tempValue = DWObject.CapValue;
+				/*
+				* Special for BOOL
+				*/
+				if(DWObject.CapValueType == EnumDWT_CapValueType.TWTY_BOOL) {
+					DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = true;
+					tempValue ==0?tempValue='FALSE':tempValue='TRUE';
+				}
+				/*
+				* Special for DUPLEX
+				*/
+				if(supportedCapabilities.value == EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
+				UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType],true);
+				UpdateInfo('Value = ' + tempValue,true);
+			}
 			break;
 		case EnumDWT_TWAINCONTAINERTYPE.TWON_RANGE/*6*/:
+			/*document.getElementById('availableValuesSPAN').style.display = '';
+			document.getElementById('availableValues').options.length = 0;
+			for(var tempNumber = DWObject.CapMinValue;tempNumber <= DWObject.CapMaxValue;tempNumber += DWObject.CapStepSize) {
+				document.getElementById('availableValues').options.add(new Option(tempNumber, tempNumber));
+			}*/
+			UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
+			UpdateInfo('Min = ' + DWObject.CapMinValue, true);
+			UpdateInfo('Max = ' + DWObject.CapMaxValue, true);
+			UpdateInfo('StepSize = ' + DWObject.CapStepSize, true);
+			UpdateInfo('Default = ' + DWObject.CapDefaultValue, true);
+			UpdateInfo('Current = ' + DWObject.CapCurrentValue, true);
 			break;
 		default: alert('This Capability is odd, no matching Container');
 	}
+	var supportLevel = [];
+	if(DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GET)) supportLevel.push('GET');/*TWQC_GET*/
+	if(DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_SET)) supportLevel.push('SET');/*TWQC_SET*/
+	if(DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GETDEFAULT)) supportLevel.push('GETDEFAULT');/*TWQC_GETDEFAULT*/
+	if(DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GETCURRENT)) supportLevel.push('GETCURRENT');/*TWQC_GETCURRENT*/
+	if(DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GET)) supportLevel.push('RESET');/*TWQC_RESET*/
+	UpdateInfo('Supported operations: ',false);
+	UpdateInfo(supportLevel.join(' / '), true);
 }
-function SelectCap_onChange() {
-    var capIndex;
-    with (document.all) {
-        DWObject.OpenSource();
-        DWObject.Capability = supportedCapabilities.value;
-        DWObject.CapGet();
-        currentCapType = DWObject.CapType;
-        if (currentCapType == 3)//TWON_ARRAY
-        {
-            Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-            Capem = Capem + "Cap Container type is <strong>TWON_ARRAY</strong><br />Available Values are:<br />";
-            AvailableValues.options.length = 0;
-            for (capIndex = 0; capIndex < DWObject.CapNumItems; capIndex++) {
-                if (!Dynamsoft.Env._bInIE)
-                    AvailableValues.options.add(new Option(DWObject.GetCapItems(capIndex), DWObject.GetCapItems(capIndex)));
-                else
-                    AvailableValues.options.add(new Option(DWObject.CapItems(capIndex), DWObject.CapItems(capIndex)));
-            }
-            appendMessage(Capem);
-        }
-        if (currentCapType == 4)//TWON_ENUMERATION
-        {
-            if (supportedCapabilities.value == 0x1114)//ICAP_FRAMES
-            {
-                AvailableValues.options.length = 0;
-                Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-                for (capIndex = 0; capIndex < DWObject.CapNumItems; capIndex++) {
-                    Capem = Capem + "Cap Container type is <strong>TWON_ENUMERATION</strong><br />";
-                    Capem = Capem + "FrameLeft: " + DWObject.CapGetFrameLeft(capIndex) + "<br />";
-                    Capem = Capem + "FrameTop: " + DWObject.CapGetFrameTop(capIndex) + "<br />";
-                    Capem = Capem + "FrameRight: " + DWObject.CapGetFrameRight(capIndex) + "<br />";
-                    Capem = Capem + "FrameBottom: " + DWObject.CapGetFrameBottom(capIndex) + "<br />";
-                }
-            }
-            else {
-                Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-                Capem = Capem + "Cap Container type is <strong>TWON_ENUMERATION</strong><br />";
-                if (!Dynamsoft.Env._bInIE) {
-                    Capem = Capem + "Current Value : " + DWObject.GetCapItems(DWObject.CapCurrentIndex) + "<br />";
-                    Capem = Capem + "Default Value : " + DWObject.GetCapItems(DWObject.CapDefaultIndex) + "<br />";
-                }
-                else {
-                    Capem = Capem + "Current Value : " + DWObject.CapItems(DWObject.CapCurrentIndex) + "<br />";
-                    Capem = Capem + "Default Value : " + DWObject.CapItems(DWObject.CapDefaultIndex) + "<br />";
-                }
-                AvailableValues.options.length = 0;
-                for (capIndex = 0; capIndex < DWObject.CapNumItems; capIndex++) {
-                    if (!Dynamsoft.Env._bInIE)
-                        AvailableValues.options.add(new Option(DWObject.GetCapItems(capIndex), DWObject.GetCapItems(capIndex)));
-                    else
-                        AvailableValues.options.add(new Option(DWObject.CapItems(capIndex), DWObject.CapItems(capIndex)));
-                }
-            }
-            appendMessage(Capem);
-        }
-        if (currentCapType == 5)//TWON_ONEVALUE
-        {
-            if (supportedCapabilities.value == 0x1114)//ICAP_FRAMES
-            {
-                AvailableValues.options.length = 0;
-                Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-                Capem = Capem + "Cap Container type is <strong>TWON_ONEVALUE</strong><br />";
-                Capem = Capem + "FrameLeft: " + DWObject.CapGetFrameLeft(0) + "<br />";
-                Capem = Capem + "FrameTop: " + DWObject.CapGetFrameTop(0) + "<br />";
-                Capem = Capem + "FrameRight: " + DWObject.CapGetFrameRight(0) + "<br />";
-                Capem = Capem + "FrameBottom: " + DWObject.CapGetFrameBottom(0) + "<br />";
-            }
-            else {
-                AvailableValues.options.length = 0;
-                Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-                Capem = Capem + "Cap Container type is <strong>TWON_ONEVALUE</strong><br />";
-                Capem = Capem + "Current Value : " + DWObject.CapValue + "<br />";
-                for (capIndex = 0; capIndex < DWObject.CapNumItems; capIndex++) {
-                    if (!Dynamsoft.Env._bInIE)
-                        Capem = Capem + "Available Values [" + capIndex + "]:" + DWObject.GetCapItems(capIndex) + "<br />";
-                    else
-                        Capem = Capem + "Available Values [" + capIndex + "]:" + DWObject.CapItems(capIndex) + "<br />";
-                }
-            }
-            appendMessage(Capem);
-        }
-        if (currentCapType == 6)//TWON_RANGE
-        {
-            AvailableValues.options.length = 0;
-            Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-            Capem = Capem + "Cap Container type is <strong>TWON_RANGE</strong><br />";
-            Capem = Capem + "Current Value : " + DWObject.CapCurrentValue + "<br />";
-            Capem = Capem + "Default Value : " + DWObject.CapDefaultValue + "<br />";
-            Capem = Capem + "Min Value : " + DWObject.CapMinValue + "<br />";
-            Capem = Capem + "Max Value : " + DWObject.CapMaxValue + "<br />";
-            Capem = Capem + "Step Size : " + DWObject.CapStepSize + "<br />";
-            appendMessage(Capem);
-        }
-    }
+function changePageStyle() {
+	switch (parseInt(document.getElementById('messageType').value)){
+		case EnumDWT_TWAINMSGTYPE.MSG_GET:
+			document.getElementById('btnSetCapability').style.display = 'none';
+			txtReturnedOrToSet.style.display = '';
+			TrueOrFalse.style.display = 'none';
+			document.getElementById('textAboveInput').innerText = 'Returned:';
+			document.getElementById('textAboveArea').innerText = 'Structure:';
+			break;
+		case EnumDWT_TWAINMSGTYPE.MSG_GETCURRENT:break;
+		case EnumDWT_TWAINMSGTYPE.MSG_GETDEFAULT:break;
+		case EnumDWT_TWAINMSGTYPE.MSG_GETFIRST:break;
+		case EnumDWT_TWAINMSGTYPE.MSG_GETNEXT:break;
+		case EnumDWT_TWAINMSGTYPE.MSG_SET:
+			document.getElementById('btnSetCapability').style.display = '';			
+			
+			if(DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue){
+				txtReturnedOrToSet.style.display = 'none';
+				TrueOrFalse.style.display = '';
+			}
+			else{
+				txtReturnedOrToSet.style.display = '';
+				TrueOrFalse.style.display = 'none';
+			}
+			txtReturnedOrToSet.value = '';
+			if(supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES)
+				txtReturnedOrToSet.value = DynamsoftCapabilityNegotiation.tempFrame;
+			document.getElementById('textAboveInput').innerText = 'Set this Value:';
+			document.getElementById('textAboveArea').innerText = 'Result:';
+			break;
+		case EnumDWT_TWAINMSGTYPE.MSG_RESET:break;
+		case EnumDWT_TWAINMSGTYPE.MSG_QUERYSUPPORT:break;
+	}
 }
-function btnSetCap() {
-    var capIndex;
-    with (document.all) {
-        DWObject.OpenSource();
-        DWObject.Capability = supportedCapabilities.value;
-        DWObject.CapGet();
-        currentCapType = DWObject.CapType;
-        if (currentCapType == 3)//TWON_ARRAY
-        {
-            Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-            Capem = Capem + "Cap Container type is <strong>TWON_ARRAY</strong><br />Available Values are:<br />";
-            AvailableValues.options.length = 0;
-            for (capIndex = 0; capIndex < DWObject.CapNumItems; capIndex++) {
-                if (!Dynamsoft.Env._bInIE)
-                    AvailableValues.options.add(new Option(DWObject.GetCapItems(capIndex), DWObject.GetCapItems(capIndex)));
-                else
-                    AvailableValues.options.add(new Option(DWObject.CapItems(capIndex), DWObject.CapItems(capIndex)));
-            }
-            Capmessage.value = Capem;
-        }
-        if (currentCapType == 4)//TWON_ENUMERATION
-        {
-            Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-            DWObject.CapCurrentIndex = AvailableValues.selectedIndex;
+function setCapability() {
+	clearInfo();
+	DWObject.OpenSource();
+	DWObject.Capability = supportedCapabilities.value;
+	DWObject.CapGet();
+	var tmpType = DWObject.CapType;
+	ctnType.selectedIndex = tmpType - 3;
+	switch(tmpType){
+		case EnumDWT_TWAINCONTAINERTYPE.TWON_ARRAY/*3*/:
+			alert('Setting an Array is not implemented');
+			break;
+		case EnumDWT_TWAINCONTAINERTYPE.TWON_ENUMERATION/*4*/:
+			if(supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES){
+				var tempValue = '';
+				if(document.getElementById('availableValues').length == 1) {
+					tempValue = txtReturnedOrToSet.value.split(' ');
+				}
+				else{
+					tempValue = document.getElementById('availableValues').value.split(' ');
+				}
+				DWObject.CapSetFrame(document.getElementById('availableValues').selectedIndex, parseInt(tempValue[0]), parseInt(tempValue[1]), parseInt(tempValue[2]), parseInt(tempValue[3]));
+				DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex;
+				DWObject.CapSet();
+				UpdateInfo(DWObject.ErrorString, true);
+				/*
+				DWObject
+								DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " " 
+				+ DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
+				UpdateInfo('There is only one available Frame: ' + DynamsoftCapabilityNegotiation.tempFrame);*/
+			}
+			else{
+				DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex;
+				DWObject.CapSet();
+				UpdateInfo(DWObject.ErrorString, true);
+				DWObject.CapGet();
+				UpdateInfo('After Setting:');
+				if(DWObject.CapValueType > 8){
+					UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')',true);
+					UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')',true);
+				}
+				else{
+					UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapCurrentIndex) + ')',true);
+					UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItems(DWObject.CapDefaultIndex) + ')',true);
+				}
+			}
+			break;
+		case EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE/*5*/:
+			if(supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES){
+				var tempValue = txtReturnedOrToSet.value.split(' ');
+				DWObject.CapSetFrame(0, parseInt(tempValue[0]), parseInt(tempValue[1]), parseInt(tempValue[2]), parseInt(tempValue[3]));
+				DWObject.CapSet();
+				UpdateInfo(DWObject.ErrorString, true);
+			}
+			else{
+				if(DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue){
+					DWObject.CapValue = TrueOrFalse.value;
+				}
+				else {
+					DWObject.CapValueType>8?
+					/*STR*/DWObject.CapValue = txtReturnedOrToSet.value
+					:
+					/*NUM*/DWObject.CapValue = parseInt(txtReturnedOrToSet.value);
+				}
+				DWObject.CapSet();
+				UpdateInfo(DWObject.ErrorString, true);
+				DWObject.CapGet();
+				var valueToShow = DWObject.CapValue;
+				if(DWObject.CapValueType == EnumDWT_CapValueType.TWTY_BOOL) {
+					valueToShow ==0?valueToShow='FALSE':valueToShow='TRUE';
+				}
+				UpdateInfo('Value after setting: ' + valueToShow, true);
+			}
+			break;
+		case EnumDWT_TWAINCONTAINERTYPE.TWON_RANGE/*6*/:
+			DWObject.CapCurrentValue = parseInt(txtReturnedOrToSet.value);
+			DWObject.CapSet();
+			UpdateInfo(DWObject.ErrorString, true);
+			DWObject.CapGet();
+			var valueToShow = DWObject.CapCurrentValue;
+			UpdateInfo('Value after setting: ' + valueToShow, true);
+			break;
+		default: alert('This Capability is odd, no matching Container');
 
-            Capem = Capem + "Cap Container type is <strong>TWON_ENUMERATION</strong><br />";
-            if (DWObject.CapSet()) {
-                Capem = Capem + "Capability was set successfully! " + "<br />";
-                Capem = Capem + "Current Value : " + DWObject.GetCapItems(DWObject.CapCurrentIndex) + "<br />";
-                Capem = Capem + "Default Value : " + DWObject.GetCapItems(DWObject.CapDefaultIndex) + "<br />";
-            }
-            else {
-                Capem = Capem + "Capability was not set! " + DWObject.CapCurrentIndex + "<br />";
-            }
-            Capmessage.value = Capem;
-        }
-        if (currentCapType == 5)//TWON_ONEVALUE
-        {
-            Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-            if (document.getElementById("valueToSet").value != 0) {
-                DWObject.CapValue = document.getElementById("valueToSet").value;
-            }
-            if (DWObject.CapSet()) {
-                Capem = Capem + "Capability was set successfully! " + "<br />";
-                if (DWObject.CapGet()) {
-                    Capem = Capem + "Current Value : " + DWObject.CapValue + "<br />";
-                }
-            }
-            Capmessage.value = Capem;
-        }
-        if (currentCapType == 6)//TWON_RANGE
-        {
-            AvailableValues.options.length = 0;
-            Capem = "--------------------------------------------------------<br /><span style='color:red;  font-weight:bold'>Capability Negotiation</span> --" + supportedCapabilities.selectedOptions[0].text + " <br />";
-            Capem = Capem + "Cap Container type is <strong>TWON_RANGE</strong><br />";
-            Capem = Capem + "Current Value : " + DWObject.CapCurrentValue + "<br />";
-            Capem = Capem + "Default Value : " + DWObject.CapDefaultValue + "<br />";
-            Capem = Capem + "Min Value : " + DWObject.CapMinValue + "<br />";
-            Capem = Capem + "Max Value : " + DWObject.CapMaxValue + "<br />";
-            Capem = Capem + "Step Size : " + DWObject.CapStepSize + "<br />";
-            appendMessage(Capem);
-        }
-    }
+	}
 }
 function btnScanEx() {
     DWObject.IfShowUI = false;

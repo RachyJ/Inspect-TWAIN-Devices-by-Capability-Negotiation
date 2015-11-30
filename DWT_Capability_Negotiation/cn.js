@@ -208,7 +208,7 @@ function getCapabilityInfo() {
     msgType.selectedIndex = 0;
     clearInfo();
     DWObject.OpenSource();
-    DWObject.Capability = supportedCapabilities.value;
+    DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();
     txtReturnedOrToSet.value = DWObject.ErrorString;
     var tmpType = DWObject.CapType;
@@ -228,7 +228,7 @@ function getCapabilityInfo() {
         case EnumDWT_TWAINCONTAINERTYPE.TWON_ENUMERATION/*4*/:
             document.getElementById('availableValuesSPAN').style.display = '';
             document.getElementById('availableValues').options.length = 0;
-            if (supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES) {
+            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
                 UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
                 for (var i = 0; i < DWObject.CapNumItems; i++) {
                     DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " "
@@ -255,7 +255,7 @@ function getCapabilityInfo() {
             break;
         case EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE/*5*/:
             var tempValue = '';
-            if (supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES) {
+            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
                 UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
                 DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " "
 				+ DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
@@ -276,7 +276,7 @@ function getCapabilityInfo() {
                 /*
 				* Special for DUPLEX
 				*/
-                if (supportedCapabilities.value == EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
+                if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.CAP_DUPLEX) tempValue = STR_DuplexValue[tempValue];
                 UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
                 UpdateInfo('Value = ' + tempValue, true);
             }
@@ -330,7 +330,7 @@ function changePageStyle() {
                 TrueOrFalse.style.display = 'none';
             }
             txtReturnedOrToSet.value = '';
-            if (supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES)
+            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES)
                 txtReturnedOrToSet.value = DynamsoftCapabilityNegotiation.tempFrame;
             document.getElementById('textAboveInput').innerText = 'Set this Value:';
             document.getElementById('textAboveArea').innerText = 'Result:';
@@ -342,7 +342,7 @@ function changePageStyle() {
 function setCapability() {
     clearInfo();
     DWObject.OpenSource();
-    DWObject.Capability = supportedCapabilities.value;
+    DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();
     var tmpType = DWObject.CapType;
     ctnType.selectedIndex = tmpType - 3;
@@ -351,7 +351,7 @@ function setCapability() {
             alert('Setting an Array is not implemented');
             break;
         case EnumDWT_TWAINCONTAINERTYPE.TWON_ENUMERATION/*4*/:
-            if (supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES) {
+            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
                 var tempValue = '';
                 if (document.getElementById('availableValues').length == 1) {
                     tempValue = txtReturnedOrToSet.value.split(' ');
@@ -386,7 +386,7 @@ function setCapability() {
             }
             break;
         case EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE/*5*/:
-            if (supportedCapabilities.value == EnumDWT_Cap.ICAP_FRAMES) {
+            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
                 var tempValue = txtReturnedOrToSet.value.split(' ');
                 DWObject.CapSetFrame(0, parseInt(tempValue[0]), parseInt(tempValue[1]), parseInt(tempValue[2]), parseInt(tempValue[3]));
                 DWObject.CapSet();

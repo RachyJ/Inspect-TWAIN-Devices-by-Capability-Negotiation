@@ -5,7 +5,7 @@
 *
 * Copyright 2015, Dynamsoft Corporation 
 * Author: Dynamsoft Support Team
-* Version: 11.1
+* Version: 11.2
 */
 
 /**

@@ -8,7 +8,7 @@ This sample demonstrators the following usage
 * Acquire image(s) after the capbility negotiation is done
 
 #### See it in action
-You can see how this sample works online <a href="http://www.dynamsoft.com/Samples/DWT/DWT_Capability_Negotiation/_CapabilityNegotiation.html" target="_blank">here</a>.
+You can see how this sample works online <a href="http://www.dynamsoft.com/Samples/DWT/DWT_Capability_Negotiation/DWT_Capability_Negotiation/_CapabilityNegotiation.html" target="_blank">here</a>.
 
 #### Complete Sample
 In order to test the sample on your own, you need to download the complete code from [here](http://www.dynamsoft.com/Samples/DWT/DWT_Capability_Negotiation.zip).

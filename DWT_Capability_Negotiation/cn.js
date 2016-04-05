@@ -27,6 +27,7 @@ STR_UnitType = ['INCHES(0)', 'CENTIMETERS(1)', 'PICAS(2)', 'POINTS(3)', 'TWIPS(4
 function checkScanner() {
     DWObject.SelectSourceByIndex(document.getElementById('source').selectedIndex);
     DWObject.CloseSource();
+	DWObject.SetOpenSourceTimeout(2000);
     DWObject.OpenSource();
     showCapabilites();
     DWObject.CloseSource();
@@ -207,6 +208,8 @@ function showCapabilites() {
 function getCapabilityInfo() {
     msgType.selectedIndex = 0;
     clearInfo();
+	DWObject.SelectSourceByIndex(document.getElementById('source').selectedIndex);
+	DWObject.SetOpenSourceTimeout(2000);
     DWObject.OpenSource();
     DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();
@@ -341,6 +344,7 @@ function changePageStyle() {
 }
 function setCapability() {
     clearInfo();
+	DWObject.SetOpenSourceTimeout(2000);
     DWObject.OpenSource();
     DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();

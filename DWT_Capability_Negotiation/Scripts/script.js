@@ -1,47 +1,76 @@
-DynamsoftCapabilityNegotiation = {
+Dynamsoft.WebTwainEnv.RegisterEvent('OnWebTwainReady', Dynamsoft_OnReady); // Register OnWebTwainReady event. This event fires as soon as Dynamic Web TWAIN is initialized and ready to be used
+
+var DWObject, supportedCapabilities, msgType, ctnType, txtReturnedOrToSet, textStatus = ""
+var CurrentPathName = unescape(location.pathname);
+var CurrentPath = CurrentPathName.substring(0, CurrentPathName.lastIndexOf("/") + 1);
+var	strHTTPServer = location.hostname;		
+var	strActionPage;
+var DynamsoftCapabilityNegotiation = {
     CurrentCapabilityHasBoolValue: false,
-    tempFrame: ''
+    tempFrame: '',
+	tmpType: 0
 };
-EnumDWT_TWAINMSGTYPE = {
-    /* Generic messages may be used with any of several DATs.                   */
-    MSG_GET: 0x0001, /* Get one or more values                   */
-    MSG_GETCURRENT: 0x0002, /* Get current value                        */
-    MSG_GETDEFAULT: 0x0003, /* Get default (e.g. power up) value        */
-    MSG_GETFIRST: 0x0004, /* Get first of a series of items, e.g. DSs */
-    MSG_GETNEXT: 0x0005, /* Iterate through a series of items.       */
-    MSG_SET: 0x0006, /* Set one or more values                   */
-    MSG_RESET: 0x0007, /* Set current value to default value       */
-    MSG_QUERYSUPPORT: 0x0008  /* Get supported operations on the cap.     */
+
+function Dynamsoft_OnReady() {
+	supportedCapabilities = document.getElementById("capabilities");
+	msgType = document.getElementById("messageType");
+	msgType.options.add(new Option("MSG_GET", EnumDWT_MessageType.TWQC_GET));
+	msgType.options.add(new Option("MSG_SET", EnumDWT_MessageType.TWQC_SET));
+	msgType.options.add(new Option("MSG_RESET", EnumDWT_MessageType.TWQC_RESET));	
+	msgType.options.selectedIndex = 1;
+	ctnType = document.getElementById("containerType");
+	ctnType.options.add(new Option("TWON_ARRAY", EnumDWT_CapType.TWON_ARRAY));
+	ctnType.options.add(new Option("TWON_ENUMERATION", EnumDWT_CapType.TWON_ENUMERATION));
+	ctnType.options.add(new Option("TWON_ONEVALUE", EnumDWT_CapType.TWON_ONEVALUE));
+	ctnType.options.add(new Option("TWON_RANGE", EnumDWT_CapType.TWON_RANGE));
+	ctnType.options.add(new Option("Not Supported", 0));
+	txtReturnedOrToSet = document.getElementById('txtReturnedOrToSet');
+	TrueOrFalse = document.getElementById('TrueOrFalse');
+	DWObject = Dynamsoft.WebTwainEnv.GetWebTwain('dwtcontrolContainer'); 
+	if (DWObject) {
+		/*
+		* List all available TWAIN deivces (scanners("etc.)
+		*/				
+		var twainsource = document.getElementById("source");
+		twainsource.options.length = 1;
+		var vCount = DWObject.SourceCount
+		for (var i = 0; i < vCount; i++) {
+			twainsource.options.add(new Option(DWObject.GetSourceNameItems(i), i));
+		}
+		DWObject.SetViewMode(2,2);
+	}
+	DWObject.IfShowUI = false;
+	DWObject.IfDisableSourceAfterAcquire = true;
 }
-EnumDWT_TWAINCONTAINERTYPE = {
-    TWON_ARRAY: 3, /* indicates TW_ARRAY container       */
-    TWON_ENUMERATION: 4, /* indicates TW_ENUMERATION container */
-    TWON_ONEVALUE: 5, /* indicates TW_ONEVALUE container    */
-    TWON_RANGE: 6  /* indicates TW_RANGE container       */
+
+function AcquireImage() {
+	var OnAcquireImageSuccess, OnAcquireImageFailure;
+	OnAcquireImageSuccess = OnAcquireImageFailure = function() {
+		DWObject.CloseSource();
+	};
+	DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
 }
-STR_CapValueType = [
-	'TWTY_INT8', 'TWTY_INT16', 'TWTY_INT32', 'TWTY_UINT8', 'TWTY_UINT16', 'TWTY_int', 'TWTY_BOOL',
-	'TWTY_FIX32', 'TWTY_FRAME', 'TWTY_STR32', 'TWTY_STR64', 'TWTY_STR128', 'TWTY_STR255'];
-STR_DuplexValue = ['TWDX_NONE(0)', 'TWDX_1PASSDUPLEX(1)', 'TWDX_2PASSDUPLEX(2)'];
-STR_UnitType = ['INCHES(0)', 'CENTIMETERS(1)', 'PICAS(2)', 'POINTS(3)', 'TWIPS(4)', 'PIXELS(5)', 'MILLIMETERS(6)'];
+
 function checkScanner() {
-    DWObject.SelectSourceByIndex(document.getElementById('source').selectedIndex);
+	if(document.getElementById('source').value == "") { alert("Please select a device first!"); return;} 
+    DWObject.SelectSourceByIndex(document.getElementById('source').value);
     DWObject.CloseSource();
 	DWObject.SetOpenSourceTimeout(2000);
     DWObject.OpenSource();
     showCapabilites();
     DWObject.CloseSource();
 }
+
 function showCapabilites() {
     DWObject.Capability = EnumDWT_Cap.CAP_SUPPORTEDCAPS;    //CAP_SUPPORTEDCAPS
-    DWObject.CapType = EnumDWT_TWAINCONTAINERTYPE.TWON_ARRAY;            //Array
     if (DWObject.CapGet()) {
         var supportedCount = DWObject.CapNumItems;
         UpdateInfo('How Many Capabilities Does it Support?', false); UpdateInfo(supportedCount, true);
-        supportedCapabilities.options.length = 0;
-        supportedCapabilities.options.add(new Option("Supported Caps", 0));
+        supportedCapabilities.options.length = 1;
+        supportedCapabilities.options[0].innerText = "All Supported Capabilites Updated";
         for (var i = 0; i < supportedCount; i++) {
             var capHexValue = parseInt(DWObject.GetCapItems(i));
+			if(capHexValue == 0x1005) continue;
             switch (capHexValue) {
                 case 0x8000: supportedCapabilities.options.add(new Option("CAP_CUSTOMBASE", 0x8000)); break;
                 case 0x0001: supportedCapabilities.options.add(new Option("CAP_XFERCOUNT", 0x0001)); break;
@@ -54,7 +83,7 @@ function showCapabilites() {
                 case 0x1002: supportedCapabilities.options.add(new Option("CAP_FEEDERENABLED", 0x1002)); break;
                 case 0x1003: supportedCapabilities.options.add(new Option("CAP_FEEDERLOADED", 0x1003)); break;
                 case 0x1004: supportedCapabilities.options.add(new Option("CAP_TIMEDATE", 0x1004)); break;
-                case 0x1005: supportedCapabilities.options.add(new Option("CAP_SUPPORTEDCAPS", 0x1005)); break;
+                //case 0x1005: supportedCapabilities.options.add(new Option("CAP_SUPPORTEDCAPS", 0x1005)); break;
                 case 0x1006: supportedCapabilities.options.add(new Option("CAP_EXTENDEDCAPS", 0x1006)); break;
                 case 0x1007: supportedCapabilities.options.add(new Option("CAP_AUTOFEED", 0x1007)); break;
                 case 0x1008: supportedCapabilities.options.add(new Option("CAP_CLEARPAGE", 0x1008)); break;
@@ -204,33 +233,39 @@ function showCapabilites() {
             }
         }
     }
+	supportedCapabilities.options.selectedIndex = 0;
 }
+
 function getCapabilityInfo() {
-    msgType.selectedIndex = 0;
+    msgType.selectedIndex = 1;
+	changeByMesageType();
     clearInfo();
-	DWObject.SelectSourceByIndex(document.getElementById('source').selectedIndex);
+	DWObject.SelectSourceByIndex(document.getElementById('source').value);
 	DWObject.SetOpenSourceTimeout(2000);
     DWObject.OpenSource();
     DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();
     txtReturnedOrToSet.value = DWObject.ErrorString;
-    var tmpType = DWObject.CapType;
-    ctnType.selectedIndex = tmpType - 3;
+    DynamsoftCapabilityNegotiation.tmpType = DWObject.CapType;
+	ctnType.selectedIndex = 5;
+	if(DynamsoftCapabilityNegotiation.tmpType > 2&& DynamsoftCapabilityNegotiation.tmpType < 7 )
+		ctnType.selectedIndex = DynamsoftCapabilityNegotiation.tmpType - 2;
     document.getElementById('availableValuesSPAN').style.display = 'none';
     DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue = false;
-    switch (tmpType) {
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_ARRAY/*3*/:
+    switch (DynamsoftCapabilityNegotiation.tmpType) {
+        case EnumDWT_CapType.TWON_ARRAY/*3*/:
             document.getElementById('availableValuesSPAN').style.display = '';
-            document.getElementById('availableValues').options.length = 0;
+            document.getElementById('availableValues').options.length = 1;
             for (var i = 0; i < DWObject.CapNumItems; i++) {
-                DWObject.CapValueType > 8 ?
+                DWObject.CapValueType > 8 ? /* >8 is string*/
                 /*STR*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItemsString(i), DWObject.GetCapItemsString(i))) :
                 /*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
             }
+			document.getElementById('availableValues').options.selectedIndex = 0;
             break;
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_ENUMERATION/*4*/:
+        case EnumDWT_CapType.TWON_ENUMERATION/*4*/:
             document.getElementById('availableValuesSPAN').style.display = '';
-            document.getElementById('availableValues').options.length = 0;
+            document.getElementById('availableValues').options.length = 1;
             if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
                 UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
                 for (var i = 0; i < DWObject.CapNumItems; i++) {
@@ -238,6 +273,7 @@ function getCapabilityInfo() {
 					+ DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
                     document.getElementById('availableValues').options.add(new Option(DynamsoftCapabilityNegotiation.tempFrame, DynamsoftCapabilityNegotiation.tempFrame));
                 }
+				document.getElementById('availableValues').options.selectedIndex = 0;
             }
             else {
                 for (var i = 0; i < DWObject.CapNumItems; i++) {
@@ -246,6 +282,7 @@ function getCapabilityInfo() {
 					:
                     /*NUM*/document.getElementById('availableValues').options.add(new Option(DWObject.GetCapItems(i), DWObject.GetCapItems(i)));
                 }
+				_showMeaningFulInfo(supportedCapabilities.value);
                 if (DWObject.CapValueType > 8) {
                     UpdateInfo('Current Index = ' + DWObject.CapCurrentIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapCurrentIndex) + ')', true);
                     UpdateInfo('Default Index = ' + DWObject.CapDefaultIndex + ' (Value: ' + DWObject.GetCapItemsString(DWObject.CapDefaultIndex) + ')', true);
@@ -256,13 +293,14 @@ function getCapabilityInfo() {
                 }
             }
             break;
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE/*5*/:
+        case EnumDWT_CapType.TWON_ONEVALUE/*5*/:
             var tempValue = '';
             if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
-                UpdateInfo('Special Capability ' + '- ICAP_FRAMES');
+                UpdateInfo('Special Capability ' + '- ICAP_FRAMES', true);
                 DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " "
 				+ DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
-                UpdateInfo('There is only one available Frame: ' + DynamsoftCapabilityNegotiation.tempFrame);
+                UpdateInfo('There is only one available Frame: ', false);
+				UpdateInfo(DynamsoftCapabilityNegotiation.tempFrame, true);
             }
             else {
                 DWObject.CapValueType > 8 ?
@@ -284,12 +322,7 @@ function getCapabilityInfo() {
                 UpdateInfo('Value = ' + tempValue, true);
             }
             break;
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_RANGE/*6*/:
-            /*document.getElementById('availableValuesSPAN').style.display = '';
-			document.getElementById('availableValues').options.length = 0;
-			for(var tempNumber = DWObject.CapMinValue;tempNumber <= DWObject.CapMaxValue;tempNumber += DWObject.CapStepSize) {
-				document.getElementById('availableValues').options.add(new Option(tempNumber, tempNumber));
-			}*/
+        case EnumDWT_CapType.TWON_RANGE/*6*/:
             UpdateInfo('ItemType = ' + STR_CapValueType[DWObject.CapValueType], true);
             UpdateInfo('Min = ' + DWObject.CapMinValue, true);
             UpdateInfo('Max = ' + DWObject.CapMaxValue, true);
@@ -297,84 +330,56 @@ function getCapabilityInfo() {
             UpdateInfo('Default = ' + DWObject.CapDefaultValue, true);
             UpdateInfo('Current = ' + DWObject.CapCurrentValue, true);
             break;
-        default: alert('This Capability is odd, no matching Container');
+        default: console.log('This Capability is not supported');
     }
     var supportLevel = [];
     if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GET)) supportLevel.push('GET');/*TWQC_GET*/
     if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_SET)) supportLevel.push('SET');/*TWQC_SET*/
-    if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GETDEFAULT)) supportLevel.push('GETDEFAULT');/*TWQC_GETDEFAULT*/
-    if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GETCURRENT)) supportLevel.push('GETCURRENT');/*TWQC_GETCURRENT*/
-    if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_GET)) supportLevel.push('RESET');/*TWQC_RESET*/
-    UpdateInfo('Supported operations: ', false);
-    UpdateInfo(supportLevel.join(' / '), true);
+    if (DWObject.CapIfSupported(EnumDWT_MessageType.TWQC_RESET)) supportLevel.push('RESET');/*TWQC_RESET*/
+	if(supportLevel.length > 0){
+		UpdateInfo('Supported operations: ', false);
+		UpdateInfo(supportLevel.join(' / '), true);
+	}
 }
-function changePageStyle() {
-    switch (parseInt(document.getElementById('messageType').value)) {
-        case EnumDWT_TWAINMSGTYPE.MSG_GET:
-            document.getElementById('btnSetCapability').style.display = 'none';
-            txtReturnedOrToSet.style.display = '';
-            TrueOrFalse.style.display = 'none';
-            document.getElementById('textAboveInput').innerText = 'Returned:';
-            document.getElementById('textAboveArea').innerText = 'Structure:';
-            break;
-        case EnumDWT_TWAINMSGTYPE.MSG_GETCURRENT: break;
-        case EnumDWT_TWAINMSGTYPE.MSG_GETDEFAULT: break;
-        case EnumDWT_TWAINMSGTYPE.MSG_GETFIRST: break;
-        case EnumDWT_TWAINMSGTYPE.MSG_GETNEXT: break;
-        case EnumDWT_TWAINMSGTYPE.MSG_SET:
-            document.getElementById('btnSetCapability').style.display = '';
 
-            if (DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue) {
-                txtReturnedOrToSet.style.display = 'none';
-                TrueOrFalse.style.display = '';
-            }
-            else {
-                txtReturnedOrToSet.style.display = '';
-                TrueOrFalse.style.display = 'none';
-            }
-            txtReturnedOrToSet.value = '';
-            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES)
-                txtReturnedOrToSet.value = DynamsoftCapabilityNegotiation.tempFrame;
-            document.getElementById('textAboveInput').innerText = 'Set this Value:';
-            document.getElementById('textAboveArea').innerText = 'Result:';
-            break;
-        case EnumDWT_TWAINMSGTYPE.MSG_RESET: break;
-        case EnumDWT_TWAINMSGTYPE.MSG_QUERYSUPPORT: break;
-    }
-}
 function setCapability() {
     clearInfo();
 	DWObject.SetOpenSourceTimeout(2000);
     DWObject.OpenSource();
     DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();
-    var tmpType = DWObject.CapType;
-    ctnType.selectedIndex = tmpType - 3;
-    switch (tmpType) {
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_ARRAY/*3*/:
+    DynamsoftCapabilityNegotiation.tmpType = DWObject.CapType;
+	ctnType.selectedIndex = 5;
+	if(DynamsoftCapabilityNegotiation.tmpType > 2&& DynamsoftCapabilityNegotiation.tmpType < 7 )
+		ctnType.selectedIndex = DynamsoftCapabilityNegotiation.tmpType - 2;
+    switch (DynamsoftCapabilityNegotiation.tmpType) {
+        case EnumDWT_CapType.TWON_ARRAY/*3*/:
             alert('Setting an Array is not implemented');
             break;
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_ENUMERATION/*4*/:
+        case EnumDWT_CapType.TWON_ENUMERATION/*4*/:
             if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
                 var tempValue = '';
-                if (document.getElementById('availableValues').length == 1) {
+                if (document.getElementById('availableValues').length == 1) { /*Nothing in the List*/
                     tempValue = txtReturnedOrToSet.value.split(' ');
                 }
                 else {
                     tempValue = document.getElementById('availableValues').value.split(' ');
                 }
-                DWObject.CapSetFrame(document.getElementById('availableValues').selectedIndex, parseInt(tempValue[0]), parseInt(tempValue[1]), parseInt(tempValue[2]), parseInt(tempValue[3]));
-                DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex;
+				if(txtReturnedOrToSet.value != DynamsoftCapabilityNegotiation.tempFrame) {
+					tempValue = txtReturnedOrToSet.value.split(' ');
+				}
+                DWObject.CapSetFrame(document.getElementById('availableValues').selectedIndex, parseFloat(tempValue[0]), parseFloat(tempValue[1]), parseFloat(tempValue[2]), parseFloat(tempValue[3]));
+                DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex - 1;
                 DWObject.CapSet();
                 UpdateInfo(DWObject.ErrorString, true);
-                /*
-				DWObject
-								DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(0) + " " + DWObject.CapGetFrameTop(0) + " " 
-				+ DWObject.CapGetFrameRight(0) + " " + DWObject.CapGetFrameBottom(0);
-				UpdateInfo('There is only one available Frame: ' + DynamsoftCapabilityNegotiation.tempFrame);*/
+                for (var i = 0; i < DWObject.CapNumItems; i++) {
+                    DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " "
+					+ DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
+                    UpdateInfo("Current Frame is: " + DynamsoftCapabilityNegotiation.tempFrame);
+                }
             }
             else {
-                DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex;
+                DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex - 1;
                 DWObject.CapSet();
                 UpdateInfo(DWObject.ErrorString, true);
                 DWObject.CapGet();
@@ -389,12 +394,17 @@ function setCapability() {
                 }
             }
             break;
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_ONEVALUE/*5*/:
+        case EnumDWT_CapType.TWON_ONEVALUE/*5*/:
             if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
                 var tempValue = txtReturnedOrToSet.value.split(' ');
-                DWObject.CapSetFrame(0, parseInt(tempValue[0]), parseInt(tempValue[1]), parseInt(tempValue[2]), parseInt(tempValue[3]));
+                DWObject.CapSetFrame(0, parseFloat(tempValue[0]), parseFloat(tempValue[1]), parseFloat(tempValue[2]), parseFloat(tempValue[3]));
                 DWObject.CapSet();
                 UpdateInfo(DWObject.ErrorString, true);
+				for (var i = 0; i < DWObject.CapNumItems; i++) {
+                    DynamsoftCapabilityNegotiation.tempFrame = DWObject.CapGetFrameLeft(i) + " " + DWObject.CapGetFrameTop(i) + " "
+					+ DWObject.CapGetFrameRight(i) + " " + DWObject.CapGetFrameBottom(i);
+                    UpdateInfo("Current Frame is: " + DynamsoftCapabilityNegotiation.tempFrame);
+                }
             }
             else {
                 if (DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue) {
@@ -404,7 +414,7 @@ function setCapability() {
                     DWObject.CapValueType > 8 ?
                     /*STR*/DWObject.CapValue = txtReturnedOrToSet.value
 					:
-                    /*NUM*/DWObject.CapValue = parseInt(txtReturnedOrToSet.value);
+                    /*NUM*/DWObject.CapValue = parseFloat(txtReturnedOrToSet.value);
                 }
                 DWObject.CapSet();
                 UpdateInfo(DWObject.ErrorString, true);
@@ -416,19 +426,125 @@ function setCapability() {
                 UpdateInfo('Value after setting: ' + valueToShow, true);
             }
             break;
-        case EnumDWT_TWAINCONTAINERTYPE.TWON_RANGE/*6*/:
-            DWObject.CapCurrentValue = parseInt(txtReturnedOrToSet.value);
+        case EnumDWT_CapType.TWON_RANGE/*6*/:
+            DWObject.CapCurrentValue = parseFloat(txtReturnedOrToSet.value);
             DWObject.CapSet();
             UpdateInfo(DWObject.ErrorString, true);
             DWObject.CapGet();
             var valueToShow = DWObject.CapCurrentValue;
             UpdateInfo('Value after setting: ' + valueToShow, true);
             break;
-        default: alert('This Capability is odd, no matching Container');
-
+        default: console.log('This Capability is not supported');
     }
 }
-function btnScanEx() {
-    DWObject.IfShowUI = false;
-    DWObject.AcquireImage();
+
+function clearInfo(){
+	document.getElementById('status_text').innerHTML = "";
+	textStatus = "";
+}
+		
+function UpdateInfo(txt, specialtxt){
+	if(specialtxt){
+		textStatus += '<span style="color:#cE5E04"><strong>' + txt + '</strong></span><br />';
+	}
+	else{
+		textStatus +=  txt + "<br />";			
+	}
+	document.getElementById('status_text').innerHTML = textStatus;
+}
+	
+function changeByMesageType() {
+    switch (parseInt(document.getElementById('messageType').value)) {
+        case EnumDWT_MessageType.TWQC_GET:
+            document.getElementById('btnSetCapability').style.display = 'none';
+            txtReturnedOrToSet.style.display = '';
+            TrueOrFalse.style.display = 'none';
+            document.getElementById('textAboveInput').innerText = 'Returned:';
+            document.getElementById('textAboveArea').innerText = 'Structure:';
+            break;
+        case EnumDWT_MessageType.TWQC_SET:
+            document.getElementById('btnSetCapability').style.display = '';
+			txtReturnedOrToSet.value = '';
+			if(DynamsoftCapabilityNegotiation.tmpType == EnumDWT_CapType.TWON_ENUMERATION) {
+				document.getElementById('textAboveInput').style.display = 'none';
+				txtReturnedOrToSet.style.display = 'none';
+			}
+			else {
+				document.getElementById('textAboveInput').style.display = '';
+				txtReturnedOrToSet.style.display = '';
+			}
+			if (DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue) {
+                txtReturnedOrToSet.style.display = 'none';
+                TrueOrFalse.style.display = '';
+            }
+            else {
+                txtReturnedOrToSet.style.display = '';
+                TrueOrFalse.style.display = 'none';
+            }
+            
+            if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
+				document.getElementById('textAboveInput').style.display = '';
+				txtReturnedOrToSet.style.display = '';
+				txtReturnedOrToSet.value = DynamsoftCapabilityNegotiation.tempFrame;
+			}                
+            document.getElementById('textAboveInput').innerText = 'Set this Value:';
+            document.getElementById('textAboveArea').innerText = 'Result:';
+            break;
+        case EnumDWT_MessageType.TWQC_RESET: break;
+    }
+}
+
+/*For More Friendly UI*/
+
+STR_CapValueType = [
+	'TWTY_INT8', 'TWTY_INT16', 'TWTY_INT32', 'TWTY_UINT8', 'TWTY_UINT16', 'TWTY_int', 'TWTY_BOOL',
+	'TWTY_FIX32', 'TWTY_FRAME', 'TWTY_STR32', 'TWTY_STR64', 'TWTY_STR128', 'TWTY_STR255'];
+	
+STR_PageSizes = [
+	"Custom", "A4LETTER, A4", "B5LETTER, JISB5", "USLETTER", "USLEGAL", "A5", "B4, ISOB4", "B6, ISOB6", "Unknown Size",
+	"USLEDGER", "USEXECUTIVE", "A3", "B3, ISOB3", "A6", "C4", "C5", "C6", "4A0", "2A0", "A0", "A1", "A2", "A7", 
+	"A8", "A9", "A10", "ISOB0", "ISOB1", "ISOB2", "ISOB5", "ISOB7", "ISOB8", "ISOB9", "ISOB10", "JISB0", "JISB1", 
+	"JISB2", "JISB3", "JISB4", "JISB6", "JISB7", "JISB8", "JISB9", "JISB10", "C0", "C1", "C2", "C3", "C7", "C8", 
+	"C9", "C10", "USEXECUTIVE", "BUSINESSCARD"];
+	
+STR_DuplexValue = ['TWDX_NONE(0)', 'TWDX_1PASSDUPLEX(1)', 'TWDX_2PASSDUPLEX(2)'];
+
+STR_UnitType = ['INCHES(0)', 'CENTIMETERS(1)', 'PICAS(2)', 'POINTS(3)', 'TWIPS(4)', 'PIXELS(5)', 'MILLIMETERS(6)'];
+
+STR_PixelType = ['TWPT_BW(0)', 'TWPT_GRAY(1)', 'TWPT_RGB(2)', 'TWPT_PALLETE(3)', 'TWPT_CMY(4)', 
+	'TWPT_CMYK(5)', 'TWPT_YUV(6)', 'TWPT_YUVK(7)', 'TWPT_CIEXYZ(8)', 'TWPT_LAB(9)', 'TWPT_SRGB(10)',
+	'TWPT_SCRGB(11)', 'Unknown(12)','Unknown(13)','Unknown(14)','Unknown(15)','TWPT_INFRARED(16)'];
+
+STR_UnitType = ['TWUN_INCHES(0)', 'TWUN_CENTIMETERS(1)', 'TWUN_PICAS(2)', 'TWUN_POINTS(3)',
+	'TWUN_TWIPS(4)', 'TWUN_PIXELS(5)', 'TWUN_MILLIMETERS(6)'];
+	
+STR_XFERMECH = ['TWSX_NATIVE(0)', 'TWSX_FILE(1)', 'TWSX_MEMORY(2)', 'Unknown(3)', 'TWSX_MEMFILE(4)'];
+
+STR_IMAGEFILEFORMAT = ['TWFF_TIFF(0)', 'TWFF_PICT(1)', 'TWFF_BMP(2)', 'TWFF_XBM(3)', 'TWFF_JFIF(4)', 
+	'TWFF_FPX(5)', 'TWFF_TIFFMULTI(6)', 'TWFF_PNG(7)', 'TWFF_SPIFF(8)', 'TWFF_EXIF(9)', 'TWFF_PDF(10)',
+	'TWFF_JP2(11)', 'removed(12)', 'TWFF_JPX(13)', 'TWFF_DEJAVU(14)', 'TWFF_PDFA(15)', 'TWFF_PDFA2(16)'];
+
+STR_ORIENTATION = ['TWOR_PORTRAIT', 'TWOR_ROT90', 'TWOR_ROT180', 'TWOR_LANDSCAPE', 'TWOR_AUTO', 
+	'TWOR_AUTOTEXT', 'TWOR_AUTOPICTURE'];
+	
+STR_PIXELFLAVOR = ['TWPF_CHOCOLATE(0)', 'TWPF_VANILLA(1)'];
+
+function _showMeaningFulInfo(_cap) {
+	var oSTR = [], bHasSTR = true;;
+	switch(parseInt(_cap)) {
+		case 0x1122: oSTR = STR_PageSizes; break;
+		case 0x0101: oSTR = STR_PixelType; break;
+		case 0x0102: oSTR = STR_UnitType; break;
+		case 0x0103: oSTR = STR_XFERMECH; break;
+		case 0x110C: oSTR = STR_IMAGEFILEFORMAT; break;
+		case 0x1110: oSTR = STR_ORIENTATION; break;
+		case 0x111F: oSTR = STR_PIXELFLAVOR; break;
+		default: bHasSTR = false; break;
+	}
+	if(bHasSTR){
+		for (var i = 1; i < document.getElementById('availableValues').options.length; i++ ) {
+			document.getElementById('availableValues').options[i].text = 
+				oSTR[parseInt(document.getElementById('availableValues').options[i].value)];
+		}
+	}
 }

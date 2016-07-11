@@ -46,7 +46,8 @@ function Dynamsoft_OnReady() {
 function AcquireImage() {
 	var OnAcquireImageSuccess, OnAcquireImageFailure;
 	OnAcquireImageSuccess = OnAcquireImageFailure = function() {
-		DWObject.CloseSource();
+		//DWObject.CloseSource();
+		UpdateInfo("Scan Succeeded!", true);
 	};
 	DWObject.AcquireImage(OnAcquireImageSuccess, OnAcquireImageFailure);
 }
@@ -347,6 +348,7 @@ function getCapabilityInfo() {
 function setCapability() {
     clearInfo();
 	if(DWObject.DataSourceStatus != 1) {
+		DWObject.SelectSourceByIndex(document.getElementById('source').value);
 		DWObject.SetOpenSourceTimeout(2000);
 		DWObject.OpenSource();
 	}
@@ -464,6 +466,7 @@ function changeByMesageType() {
             txtReturnedOrToSet.style.display = '';
             TrueOrFalse.style.display = 'none';
             document.getElementById('textAboveInput').innerText = 'Returned:';
+			document.getElementById('textAboveInput').style.display = '';
             document.getElementById('textAboveArea').innerText = 'Structure:';
             break;
         case EnumDWT_MessageType.TWQC_SET:
@@ -475,16 +478,15 @@ function changeByMesageType() {
 			}
 			else {
 				document.getElementById('textAboveInput').style.display = '';
-				txtReturnedOrToSet.style.display = '';
+				if (DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue) {
+					txtReturnedOrToSet.style.display = 'none';
+					TrueOrFalse.style.display = '';
+				}
+				else {
+					txtReturnedOrToSet.style.display = '';
+					TrueOrFalse.style.display = 'none';
+				}
 			}
-			if (DynamsoftCapabilityNegotiation.CurrentCapabilityHasBoolValue) {
-                txtReturnedOrToSet.style.display = 'none';
-                TrueOrFalse.style.display = '';
-            }
-            else {
-                txtReturnedOrToSet.style.display = '';
-                TrueOrFalse.style.display = 'none';
-            }
             
             if (parseInt(supportedCapabilities.value) == EnumDWT_Cap.ICAP_FRAMES) {
 				document.getElementById('textAboveInput').style.display = '';
@@ -494,7 +496,19 @@ function changeByMesageType() {
             document.getElementById('textAboveInput').innerText = 'Set this Value:';
             document.getElementById('textAboveArea').innerText = 'Result:';
             break;
-        case EnumDWT_MessageType.TWQC_RESET: break;
+        case EnumDWT_MessageType.TWQC_RESET: 
+			clearInfo();
+			if(DWObject.DataSourceStatus != 1) {
+				DWObject.SetOpenSourceTimeout(2000);
+				DWObject.OpenSource();
+			}
+			DWObject.Capability = parseInt(supportedCapabilities.value);
+			DWObject.CapReset();
+			UpdateInfo('Resetting ' + supportedCapabilities.options[supportedCapabilities.options.selectedIndex].innerText + ' in 1 second...', true);
+			setTimeout(function(){
+				getCapabilityInfo();
+			},1000);
+			break;
     }
 }
 

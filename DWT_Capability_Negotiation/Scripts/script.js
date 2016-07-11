@@ -187,7 +187,7 @@ function showCapabilites() {
                 case 0x112D: supportedCapabilities.options.add(new Option("ICAP_UNDEFINEDIMAGESIZE", 0x112D)); break;
                 case 0x112E: supportedCapabilities.options.add(new Option("ICAP_IMAGEDATASET", 0x112E)); break;
                 case 0x112F: supportedCapabilities.options.add(new Option("ICAP_EXTIMAGEINFO", 0x112F)); break;
-                case 0x1130: supportedCapabilities.options.add(new Option("ICAP_MINUMUMHEIGHT", 0x1130)); break;
+                case 0x1130: supportedCapabilities.options.add(new Option("ICAP_MINIMUMHEIGHT", 0x1130)); break;
                 case 0x1131: supportedCapabilities.options.add(new Option("ICAP_MINIMUMWIDTH", 0x1131)); break;
                 case 0x1134: supportedCapabilities.options.add(new Option("ICAP_AUTODISCARDBLANKPAGES", 0x1134)); break;
                 case 0x1136: supportedCapabilities.options.add(new Option("ICAP_FLIPROTATION", 0x1136)); break;
@@ -240,9 +240,11 @@ function getCapabilityInfo() {
     msgType.selectedIndex = 1;
 	changeByMesageType();
     clearInfo();
-	DWObject.SelectSourceByIndex(document.getElementById('source').value);
-	DWObject.SetOpenSourceTimeout(2000);
-    DWObject.OpenSource();
+	if(DWObject.DataSourceStatus != 1) {
+		DWObject.SelectSourceByIndex(document.getElementById('source').value);
+		DWObject.SetOpenSourceTimeout(2000);
+		DWObject.OpenSource();
+	}	
     DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();
     txtReturnedOrToSet.value = DWObject.ErrorString;
@@ -344,8 +346,10 @@ function getCapabilityInfo() {
 
 function setCapability() {
     clearInfo();
-	DWObject.SetOpenSourceTimeout(2000);
-    DWObject.OpenSource();
+	if(DWObject.DataSourceStatus != 1) {
+		DWObject.SetOpenSourceTimeout(2000);
+		DWObject.OpenSource();
+	}
     DWObject.Capability = parseInt(supportedCapabilities.value);
     DWObject.CapGet();
     DynamsoftCapabilityNegotiation.tmpType = DWObject.CapType;

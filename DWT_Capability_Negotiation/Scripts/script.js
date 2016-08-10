@@ -385,6 +385,7 @@ function setCapability() {
                 }
             }
             else {
+				DWObject.CapValue = document.getElementById('availableValues')[document.getElementById('availableValues').selectedIndex].value;
                 DWObject.CapCurrentIndex = document.getElementById('availableValues').selectedIndex - 1;
                 DWObject.CapSet();
                 UpdateInfo(DWObject.ErrorString, true);

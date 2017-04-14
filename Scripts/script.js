@@ -28,6 +28,8 @@ function Dynamsoft_OnReady() {
 	TrueOrFalse = document.getElementById('TrueOrFalse');
 	DWObject = Dynamsoft.WebTwainEnv.GetWebTwain('dwtcontrolContainer'); 
 	if (DWObject) {
+		DWObject.Width = 506;
+		DWObject.Height = 600;
 		/*
 		* List all available TWAIN deivces (scanners("etc.)
 		*/				

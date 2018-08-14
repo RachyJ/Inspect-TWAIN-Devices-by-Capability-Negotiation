@@ -17,6 +17,6 @@ You can see how this sample works online <a href="http://www.dynamsoft.com/Sampl
 #### Complete Sample
 In order to test the sample on your own, you need to download the complete code from [here](http://www.dynamsoft.com/Samples/DWT/Inspect-TWAIN-Devices-by-Capability-Negotiation.zip).
 
-####Reference
+#### Reference
 * Core Software used: [Dynamic Web TWAIN](http://www.dynamsoft.com/Downloads/WebTWAIN_Download.aspx)
-* APIs used in the sample: [Dynamic Web TWAIN APIs] (http://developer.dynamsoft.com/dwt/acquireimage)
+* APIs used in the sample: [Dynamic Web TWAIN APIs](http://developer.dynamsoft.com/dwt/acquireimage)
